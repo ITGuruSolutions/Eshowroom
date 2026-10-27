@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hans Impex — 360° E-Showroom | Noida Export House</title>
+  <meta name="description" content="Explore Hans Impex 360° virtual e-showroom. Premium Indian dry fruits, machine-cleaned makhana (foxnuts), and export spices from Noida (est. 2003).">
+  <link rel="icon" href="assets/hans-impex-logo.webp">
+  
+  <!-- Google Fonts: Cormorant Garamond & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Preload 360 background & styles -->
+  <link rel="preload" as="image" href="background.webp" type="image/webp">
+  <link rel="preload" as="image" href="background.jpg" type="image/jpeg">
+  <link rel="stylesheet" href="css/showroom.css?v=4.0">
+</head>
+<body class="mood-day">
+
+  <!-- =========================================================================
+       360° WebGL Viewport (Three.js Powered)
+       ========================================================================= -->
+  <div id="showroom-viewport" role="application" aria-label="Hans Impex 360 Degree Virtual Showroom">
+    <canvas id="showroom-canvas"></canvas>
+  </div>
+  <div class="vignette-overlay" aria-hidden="true"></div>
+
+  <!-- 3D Hotspot Screen Anchors -->
+  <div id="spots-container" aria-label="Interactive Product Hotspots"></div>
+
+  <!-- Loading Bar Indicator -->
+  <div class="viewport-loader" id="viewport-loader" aria-hidden="true">
+    <span class="viewport-loader-bar"></span>
+  </div>
+
+  <!-- =========================================================================
+       Top HUD Bar (Studio Telemetry & Controls)
+       ========================================================================= -->
+  <header class="topbar-hud">
+    <!-- Brand Capsule -->
+    <a class="brand-capsule" href="https://hansimpex.online/" target="_blank" rel="noopener" title="Visit Hans Impex Official Website">
+      <img class="brand-logo-img" src="assets/hans-impex-logo.webp" alt="Hans Impex Logo">
+      <div class="brand-meta">
+        <span class="brand-title">Hans Impex</span>
+        <span class="brand-sub">EST. 2003 · NOIDA · 360° SHOWROOM</span>
+      </div>
+    </a>
+
+    <!-- Live Search HUD -->
+    <div class="search-hud">
+      <div class="search-input-wrap">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" stroke-width="2"/>
+          <path d="M20 20l-3.2-3.2" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input id="search-input" class="search-input" type="search" placeholder="Search almonds, makhana, spices…" autocomplete="off" aria-label="Search showroom products">
+        <span class="search-kbd-hint">/</span>
+      </div>
+      <div class="search-results-tray" id="search-results-tray" role="listbox"></div>
+    </div>
+
+    <!-- Right Action Cluster -->
+    <div class="hud-actions">
+      <!-- Showroom Atmosphere Switcher -->
+      <button class="hud-btn" id="mood-toggle-btn" type="button" title="Switch Showroom Lighting Mode">
+        <span>☀️</span>
+        <span class="hud-btn-text">Lighting</span>
+      </button>
+
+      <!-- Audio Soundscape Toggle -->
+      <button class="hud-btn" id="sound-toggle-btn" type="button" title="Toggle Showroom Soundscape">
+        <div class="sound-bars" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <span class="hud-btn-text">Audio</span>
+      </button>
+
+      <!-- Guided Auto-Tour Button -->
+      <button class="hud-btn" id="guided-tour-btn" type="button" title="Start Guided Showroom Tour">
+        <span>🧭</span>
+        <span class="hud-btn-text">Auto Tour</span>
+      </button>
+
+      <!-- Quick Action Buttons -->
+      <button class="hud-btn" id="hud-enquire-btn" type="button">Enquire</button>
+      <button class="hud-btn gold-btn" id="hud-quote-btn" type="button">Request Quote</button>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       Category Pavilion Navigation (Automotive Zone Selector Tabs)
+       ========================================================================= -->
+  <nav class="pavilion-nav" id="pavilion-nav" aria-label="Showroom Zones">
+    <button class="pavilion-tab on" type="button" data-cat="all">
+      <span class="tab-icon">🌟</span>
+      <span>All Products</span>
+      <span class="tab-count">14</span>
+    </button>
+    <button class="pavilion-tab" type="button" data-cat="dry">
+      <span class="tab-icon">🌰</span>
+      <span>Dry Fruits</span>
+      <span class="tab-count">2</span>
+    </button>
+    <button class="pavilion-tab" type="button" data-cat="fox">
+      <span class="tab-icon">⚪</span>
+      <span>Makhana</span>
+      <span class="tab-count">1</span>
+    </button>
+    <button class="pavilion-tab" type="button" data-cat="spice">
+      <span class="tab-icon">🌶️</span>
+      <span>Spices</span>
+      <span class="tab-count">6</span>
+    </button>
+    <button class="pavilion-tab" type="button" data-cat="premium">
+      <span class="tab-icon">👑</span>
+      <span>Royal Reserve</span>
+      <span class="tab-count">5</span>
+    </button>
+    <button class="pavilion-tab" type="button" data-cat="bulk">
+      <span class="tab-icon">🚢</span>
+      <span>Bulk &amp; Export</span>
+    </button>
+  </nav>
+
+  <!-- =========================================================================
+       Look-Around Camera Tools & Compass
+       ========================================================================= -->
+  <div class="telemetry-tools" aria-label="Showroom Camera Controls">
+    <button class="tool-btn btn-reset" id="btn-reset-view" type="button" title="Reset View Angle">Reset</button>
+    <button class="tool-btn" id="btn-zoom-in" type="button" title="Zoom In">+</button>
+    <button class="tool-btn" id="btn-zoom-out" type="button" title="Zoom Out">−</button>
+    <button class="tool-btn" id="btn-fullscreen" type="button" title="Toggle Fullscreen">⛶</button>
+  </div>
+
+  <div class="compass-hud" aria-hidden="true" title="Compass Heading">
+    <div class="compass-arrow" id="compass-arrow"></div>
+  </div>
+
+  <p class="interaction-hint" id="interaction-hint">
+    Drag to look around · Scroll or pinch to zoom · Click pins to inspect
+  </p>
+
+  <!-- =========================================================================
+       Interactive Radar Mini-Map / Floor Plan (Bajaj Style)
+       ========================================================================= -->
+  <aside class="radar-map-panel" id="radar-map-panel" aria-label="Showroom Floor Blueprint">
+    <div class="radar-header">
+      <span class="radar-title">Showroom Radar</span>
+      <button class="radar-toggle-btn" id="radar-toggle-btn" type="button" title="Minimize Radar">✕</button>
+    </div>
+    
+    <svg class="radar-svg-stage" viewBox="0 0 168 118" role="img" aria-label="Interactive Hans Impex Showroom Radar Plan">
+      <!-- Outer Floor Plan Bound -->
+      <rect x="4" y="6" width="160" height="106" rx="10" fill="#140f0c" stroke="rgba(212,175,55,0.3)" stroke-width="1.2"/>
+      
+      <!-- Dry Fruits Zone -->
+      <g class="map-zone" data-cat="dry">
+        <rect class="map-zone-rect" x="8" y="12" width="46" height="66" rx="7" fill="#8a2318" opacity="0.85"/>
+        <text x="31" y="48" text-anchor="middle" fill="#fff" font-size="7.5" font-family="Inter,sans-serif" font-weight="600">Dry Fruits</text>
+      </g>
+      
+      <!-- Makhana Lounge -->
+      <g class="map-zone" data-cat="fox">
+        <rect class="map-zone-rect" x="60" y="32" width="48" height="34" rx="7" fill="#2d6a4f" opacity="0.85"/>
+        <text x="84" y="52" text-anchor="middle" fill="#fff" font-size="7.5" font-family="Inter,sans-serif" font-weight="600">Makhana</text>
+      </g>
+      
+      <!-- Heritage Spices Arcade -->
+      <g class="map-zone" data-cat="spice">
+        <rect class="map-zone-rect" x="114" y="12" width="46" height="66" rx="7" fill="#b56a1e" opacity="0.85"/>
+        <text x="137" y="48" text-anchor="middle" fill="#fff" font-size="7.5" font-family="Inter,sans-serif" font-weight="600">Spices</text>
+      </g>
+      
+      <!-- Bulk & Global Logistics Bay -->
+      <g class="map-zone" data-cat="bulk">
+        <rect class="map-zone-rect" x="52" y="86" width="64" height="20" rx="6" fill="#3d4a2c" opacity="0.85"/>
+        <text x="84" y="99" text-anchor="middle" fill="#fff" font-size="6.5" font-family="Inter,sans-serif" font-weight="600">Bulk &amp; Export</text>
+      </g>
+
+      <!-- Real-Time Dynamic Vision Cone (FOV Sweep) -->
+      <path class="map-fov-cone" id="map-fov-cone" d="M84,74 L60,18 A70,70 0 0,1 108,18 Z"/>
+      
+      <!-- User Position Avatar Beacon -->
+      <circle class="map-user-beacon" id="map-user-beacon" cx="84" cy="74" r="4.5"/>
+    </svg>
+  </aside>
+
+  <!-- Collapsed Mini-Map Floating Launcher -->
+  <button class="radar-collapsed-launcher" id="radar-collapsed-launcher" type="button" title="Expand Showroom Radar">
+    🗺️
+  </button>
+
+  <!-- =========================================================================
+       Guided Auto-Tour Telemetry Console (Bajaj Showroom Walkthrough)
+       ========================================================================= -->
+  <div class="tour-console" id="tour-console" role="region" aria-label="Guided Showroom Tour">
+    <div class="tour-top-row">
+      <div class="tour-meta-wrap">
+        <span class="tour-station-badge" id="tour-station-badge">WELCOME</span>
+        <h3 class="tour-station-title" id="tour-station-title">Hans Impex Noida</h3>
+      </div>
+      <span class="tour-step-counter" id="tour-step-counter">1 of 6</span>
+    </div>
+
+    <p class="tour-caption-text" id="tour-caption-text">
+      Welcome to Hans Impex. Established in 2003, we export premium Indian spices, dry fruits, and machine-cleaned makhana worldwide.
+    </p>
+
+    <div class="tour-progress-bar-wrap">
+      <div class="tour-progress-fill" id="tour-progress-fill"></div>
+    </div>
+
+    <div class="tour-controls-row">
+      <div style="display:flex;gap:6px;">
+        <button class="tour-ctrl-btn" id="tour-prev-btn" type="button">‹ Previous</button>
+        <button class="tour-ctrl-btn" id="tour-play-pause-btn" type="button">Pause</button>
+        <button class="tour-ctrl-btn" id="tour-next-btn" type="button">Next ›</button>
+      </div>
+      <button class="tour-ctrl-btn btn-exit-tour" id="tour-exit-btn" type="button">Exit Tour ✕</button>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       Bottom Showcase Carousel Rail with Collapse Toggle
+       ========================================================================= -->
+  <div class="showcase-rail-wrap" id="showcase-rail-wrap">
+    <button class="showcase-toggle-btn" id="showcase-toggle-btn" type="button" title="Toggle Products Gallery">
+      <span class="showcase-toggle-icon">▾</span>
+      <span class="showcase-toggle-label">Products (14)</span>
+    </button>
+    <div class="showcase-rail" id="showcase-rail" aria-label="Showroom Products Gallery"></div>
+  </div>
+
+  <!-- =========================================================================
+       Bajaj-Grade 360° Product Studio Inspector Modal
+       ========================================================================= -->
+  <div class="product-studio-overlay" id="product-studio-overlay" role="dialog" aria-modal="true" aria-labelledby="studio-product-title">
+    <div class="product-studio-modal">
+      <button class="studio-close-btn" id="studio-close-btn" type="button" aria-label="Close Product Studio">✕</button>
+
+      <!-- Left Column: 360 Turntable Stage -->
+      <div class="studio-stage-col">
+        <div class="studio-stage-header">
+          <span class="studio-tag" id="studio-cat-tag">Dry Fruits</span>
+          <span class="studio-badge" id="studio-origin-badge">Origin: India</span>
+        </div>
+
+        <!-- Interactive Turntable Stage -->
+        <div class="turntable-container" id="turntable-container" title="Drag horizontally to spin 360°">
+          <div class="turntable-pedestal"></div>
+          <img class="turntable-product-img" id="turntable-product-img" src="" alt="360 Product Inspection">
+          <div class="turntable-guidance">
+            <span>↔</span> Drag to rotate 360°
+          </div>
+        </div>
+
+        <!-- Packaging Variant Switcher -->
+        <div class="variant-selector-box">
+          <span class="variant-label">Packaging &amp; Volume Options:</span>
+          <div class="variant-chips-row" id="studio-variants-list"></div>
+        </div>
+      </div>
+
+      <!-- Right Column: Technical & Export Specifications -->
+      <div class="studio-info-col">
+        <div class="studio-title-wrap">
+          <h2 class="studio-product-title" id="studio-product-title">Premium Almonds</h2>
+          <p class="studio-product-tagline" id="studio-product-tagline">Handpicked whole nuts · Natural sweetness</p>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="studio-tabs-bar" role="tablist">
+          <button class="studio-tab-btn active" type="button" data-tab="overview">Overview</button>
+          <button class="studio-tab-btn" type="button" data-tab="specs">Export Specs</button>
+          <button class="studio-tab-btn" type="button" data-tab="logistics">Logistics &amp; Packing</button>
+          <button class="studio-tab-btn" type="button" data-tab="nutrition">Nutrition &amp; Purity</button>
+        </div>
+
+        <!-- Tab 1: Overview -->
+        <div class="studio-tab-content">
+          <div class="studio-panel-view active" id="panel-overview">
+            <p class="studio-desc-text" id="studio-desc-text"></p>
+            <div class="features-grid" id="studio-features-grid"></div>
+          </div>
+
+          <!-- Tab 2: Technical Specifications -->
+          <div class="studio-panel-view" id="panel-specs">
+            <table class="specs-table" id="studio-specs-table"></table>
+          </div>
+
+          <!-- Tab 3: Logistics & Packing -->
+          <div class="studio-panel-view" id="panel-logistics">
+            <table class="specs-table">
+              <tr>
+                <td>Active MOQ</td>
+                <td id="spec-active-moq">500 kg</td>
+              </tr>
+              <tr>
+                <td>Packaging Material</td>
+                <td id="spec-active-packaging">Vacuum-sealed pouch inside master carton</td>
+              </tr>
+              <tr>
+                <td>Shelf Stability</td>
+                <td id="spec-active-shelflife">18 months</td>
+              </tr>
+              <tr>
+                <td>Processing Facility</td>
+                <td>Sector 49, Noida, Uttar Pradesh 201301 (Est. 2003)</td>
+              </tr>
+              <tr>
+                <td>Nearest Inland Depot</td>
+                <td>ICD Dadri / ICD Patparganj (Delhi-NCR)</td>
+              </tr>
+              <tr>
+                <td>Export Sea Ports</td>
+                <td>JNPT Nhava Sheva (Mumbai) · Mundra Port (Gujarat)</td>
+              </tr>
+              <tr>
+                <td>Container Loading</td>
+                <td>20ft FCL &amp; 40ft High Cube container stuffing</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Tab 4: Nutrition & Purity -->
+          <div class="studio-panel-view" id="panel-nutrition">
+            <table class="specs-table" id="studio-nutrition-table"></table>
+            <div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.2);font-size:12px;color:var(--gold-light);">
+              ✓ 100% Non-GMO · Free from Sudan dyes, lead chromate, and chemical bleach. Cleaned and packed in compliance with APEDA, FSSAI, and global food safety norms.
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Suite Buttons -->
+        <div class="studio-action-suite">
+          <a class="studio-act-btn btn-whatsapp" id="studio-whatsapp-btn" href="#" target="_blank" rel="noopener">
+            <span>💬</span> WhatsApp Instant Quote
+          </a>
+          <button class="studio-act-btn btn-quote" id="studio-quote-btn" type="button">
+            <span>📋</span> Request Export Quote
+          </button>
+          <button class="studio-act-btn btn-secondary" id="studio-print-btn" type="button" title="Print Product Spec Sheet">
+            <span>🖨️</span> Print Spec Sheet
+          </button>
+          <a class="studio-act-btn btn-secondary" id="studio-site-link" href="https://hansimpex.online/" target="_blank" rel="noopener">
+            <span>🌐</span> Website
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       Export Quote & Enquiry Modal
+       ========================================================================= -->
+  <div class="modal-backdrop" id="quote-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-heading">
+    <div class="quote-modal-sheet">
+      <button class="modal-close-icon" id="modal-close-icon" type="button" aria-label="Close form">✕</button>
+      <span class="modal-kicker">Hans Impex Global Trade</span>
+      <h3 class="modal-heading" id="modal-heading">Request Export Quotation</h3>
+
+      <form class="quote-form-grid" id="export-quote-form">
+        <div class="form-row-two">
+          <input class="form-field-input" name="name" id="quote-name-field" placeholder="Full Name" required aria-label="Full Name">
+          <input class="form-field-input" name="email" type="email" placeholder="Corporate Email" required aria-label="Corporate Email">
+        </div>
+        <div class="form-row-two">
+          <input class="form-field-input" name="phone" placeholder="Phone / WhatsApp (+Country Code)" required aria-label="Phone Number">
+          <input class="form-field-input" name="company" placeholder="Company Name &amp; Website" aria-label="Company Name">
+        </div>
+        <div class="form-row-two">
+          <select class="form-field-select" name="product" id="quote-product-select" aria-label="Selected Product"></select>
+          <input class="form-field-input" name="destination" placeholder="Destination Port (e.g. Dubai, Rotterdam)" aria-label="Destination Port">
+        </div>
+        <input class="form-field-input" name="qty" placeholder="Estimated Quantity / Packing (e.g. 5 MT, 500 cartons)" aria-label="Quantity">
+        <textarea class="form-field-textarea" name="message" rows="3" placeholder="Additional specifications, private labeling, or target delivery timeline…" aria-label="Notes"></textarea>
+        
+        <button class="hud-btn gold-btn" type="submit" style="width:100%;height:46px;justify-content:center;font-size:14px;">
+          Send Quotation Request
+        </button>
+        <p class="form-status-msg" id="quote-status-msg"></p>
+        <p class="form-disclaimer">
+          Hans Impex · Sector 49, Main Dadri Road, Noida 201301 · +91 7428240290 · contactus@hansimpex.com
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       Cinematic Entrance Gate (Bajaj Style)
+       ========================================================================= -->
+  <section class="gate-screen" id="gate-screen">
+    <div class="gate-card-inner">
+      <img class="gate-logo" src="assets/hans-impex-logo.webp" alt="Hans Impex Exporter Crest">
+      <span class="gate-kicker">NOIDA · EST. 2003 · GLOBAL EXPORT HOUSE</span>
+      <h1 class="gate-headline">Step Inside the 360° E-Showroom</h1>
+      <p class="gate-copy">
+        Walk the Hans Impex showroom floor in Noida. Inspect California almonds, export-grade makhana, and stone-ground spices in 360° virtual reality — then enquire directly with our export desk.
+      </p>
+
+      <div class="gate-features-row">
+        <span class="gate-pill">✨ Three.js 360° WebGL</span>
+        <span class="gate-pill">🔍 360° Product Turntable</span>
+        <span class="gate-pill">🧭 Interactive Guided Tour</span>
+        <span class="gate-pill">🗺️ Real-Time Radar Mini-Map</span>
+        <span class="gate-pill">💬 Instant WhatsApp Quotations</span>
+      </div>
+
+      <button class="gate-enter-btn" id="gate-enter-btn" type="button">
+        <span>ENTER 360° SHOWROOM</span>
+        <span>→</span>
+      </button>
+
+      <label class="gate-audio-toggle">
+        <input type="checkbox" id="gate-audio-opt" checked>
+        <span>Enable atmospheric showroom audio soundscape</span>
+      </label>
+    </div>
+  </section>
+
+  <!-- Toast Notification Capsule -->
+  <div class="showroom-toast" id="showroom-toast" role="status"></div>
+
+  <!-- Scripts: Standalone Panorama Bundle, Three.js, Catalog Data, Master Engine -->
+  <script src="assets/showroom-pano-base64.js?v=4.0"></script>
+  <script src="js/three.min.js"></script>
+  <script src="js/catalog.js?v=4.0"></script>
+  <script src="js/showroom.js?v=4.0"></script>
+</body>
+</html>
