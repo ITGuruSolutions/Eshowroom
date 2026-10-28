@@ -18,10 +18,10 @@
       camera: null,
       sphereMesh: null,
       yaw: 180,
-      pitch: -22,
+      pitch: -20,
       fov: 74,
       targetYaw: 180,
-      targetPitch: -22,
+      targetPitch: -20,
       targetFov: 74,
       isDragging: false,
       lastMouseX: 0,
@@ -60,7 +60,7 @@
     loaderBar: $(".viewport-loader-bar"),
     gate: $("#gate-screen"),
     gateEnterBtn: $("#gate-enter-btn"),
-    gateAudioCheck: $("#gate-audio-opt"),
+    gateAudioCheck: null,
     toast: $("#showroom-toast"),
     search: $("#search-input"),
     searchResults: $("#search-results-tray"),
@@ -85,144 +85,20 @@
     turntableStage: $("#turntable-container"),
     quoteModal: $("#quote-modal-backdrop"),
     quoteForm: $("#export-quote-form"),
-    soundToggleBtn: $("#sound-toggle-btn"),
+    soundToggleBtn: null,
     tourToggleBtn: $("#guided-tour-btn"),
     moodToggleBtn: $("#mood-toggle-btn")
   };
 
-  // ---------------------------------------------------------------------------
-  // Web Audio API Synthesizer (Ambient Pad & Interactive SFX)
-  // ---------------------------------------------------------------------------
+  // Audio section removed per user request (safe no-op stubs maintained)
   const AudioEngine = {
-    init() {
-      if (state.audioCtx) return;
-      try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        state.audioCtx = new AudioContext();
-      } catch (_) {}
-    },
-
-    startAmbiance() {
-      if (!state.audioCtx || state.ambientNodes) return;
-      try {
-        if (state.audioCtx.state === "suspended") {
-          state.audioCtx.resume();
-        }
-        const ctx = state.audioCtx;
-        
-        // Gentle warm drone pad
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
-        const filter = ctx.createBiquadFilter();
-        const gain = ctx.createGain();
-
-        osc1.type = "sine";
-        osc1.frequency.setValueAtTime(110, ctx.currentTime); // A2
-        osc2.type = "triangle";
-        osc2.frequency.setValueAtTime(164.81, ctx.currentTime); // E3
-
-        filter.type = "lowpass";
-        filter.frequency.setValueAtTime(320, ctx.currentTime);
-
-        gain.gain.setValueAtTime(0.001, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.055, ctx.currentTime + 3);
-
-        osc1.connect(filter);
-        osc2.connect(filter);
-        filter.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc1.start();
-        osc2.start();
-
-        state.ambientNodes = { osc1, osc2, gain, filter };
-      } catch (_) {}
-    },
-
-    stopAmbiance() {
-      if (!state.ambientNodes || !state.audioCtx) return;
-      try {
-        const { gain, osc1, osc2 } = state.ambientNodes;
-        gain.gain.linearRampToValueAtTime(0.0001, state.audioCtx.currentTime + 1);
-        setTimeout(() => {
-          try {
-            osc1.stop();
-            osc2.stop();
-          } catch (_) {}
-          state.ambientNodes = null;
-        }, 1100);
-      } catch (_) {}
-    },
-
-    playChime() {
-      if (!state.audioEnabled || !state.audioCtx) return;
-      try {
-        const ctx = state.audioCtx;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
-        osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.52);
-      } catch (_) {}
-    },
-
-    playWhoosh() {
-      if (!state.audioEnabled || !state.audioCtx) return;
-      try {
-        const ctx = state.audioCtx;
-        const osc = ctx.createOscillator();
-        const filter = ctx.createBiquadFilter();
-        const gain = ctx.createGain();
-        osc.type = "sawtooth";
-        filter.type = "bandpass";
-        filter.frequency.setValueAtTime(200, ctx.currentTime);
-        filter.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.25);
-        gain.gain.setValueAtTime(0.04, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.42);
-      } catch (_) {}
-    },
-
-    playClick() {
-      if (!state.audioEnabled || !state.audioCtx) return;
-      try {
-        const ctx = state.audioCtx;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(520, ctx.currentTime);
-        gain.gain.setValueAtTime(0.05, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.09);
-      } catch (_) {}
-    }
+    init() {},
+    startAmbiance() {},
+    stopAmbiance() {},
+    playChime() {},
+    playWhoosh() {},
+    playClick() {}
   };
-
-  function toggleAudio() {
-    AudioEngine.init();
-    state.audioEnabled = !state.audioEnabled;
-    els.soundToggleBtn.classList.toggle("audio-on", state.audioEnabled);
-    if (state.audioEnabled) {
-      AudioEngine.startAmbiance();
-      toast("Showroom Audio Ambiance Enabled");
-    } else {
-      AudioEngine.stopAmbiance();
-      toast("Audio Muted");
-    }
-  }
 
   // ---------------------------------------------------------------------------
   // Three.js 360° Equirectangular WebGL Engine
@@ -271,6 +147,8 @@
       candidates.push(window.__SHOWROOM_PANO_BASE64__);
     }
     candidates.push(
+      "background2.webp",
+      "background2.jpeg",
       "background.webp",
       "backgraound.webp",
       "background.jpg",
@@ -577,7 +455,7 @@
         <div class="spot-preview-card">
           <span class="spot-preview-kicker">${CATEGORIES[product.category]?.name || "Export"}</span>
           <span class="spot-preview-title">${product.name}</span>
-          <span class="spot-preview-action">Tap to 360° Inspect <span>→</span></span>
+          <span class="spot-preview-action">Tap to 360° Inspect <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
         </div>
       `;
 
@@ -718,17 +596,25 @@
       return p.category === categoryId;
     });
 
-    els.rail.innerHTML = list.map((p) => `
+    els.rail.innerHTML = list.map((p) => {
+      const topVariant = p.variants?.[0]?.size || "Export Grade";
+      return `
       <div class="showcase-card ${state.activeProductId === p.id ? "active" : ""}" data-id="${p.id}">
         <div class="showcase-thumb-wrap">
           <span class="showcase-chip">${CATEGORIES[p.category]?.name?.split(" ")[0] || "Export"}</span>
           <img src="${p.thumb}" alt="${p.name}" loading="lazy">
-          <button class="showcase-locate-chip" data-id="${p.id}" title="Focus in Showroom">📍 View</button>
+          <button class="showcase-locate-chip" data-id="${p.id}" title="Focus in Showroom"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> View</button>
         </div>
-        <div class="showcase-name">${p.name}</div>
-        <div class="showcase-sub">${p.tagline ? p.tagline.split("·")[0] : "Export Grade"}</div>
+        <div class="showcase-body">
+          <div class="showcase-name" title="${p.name}">${p.name}</div>
+          <div class="showcase-sub">${p.tagline ? p.tagline.split("·")[0].trim() : "Export Quality"}</div>
+          <div class="showcase-footer">
+            <span class="showcase-variant-tag">${topVariant}</span>
+            <span class="showcase-cta">360° <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+          </div>
+        </div>
       </div>
-    `).join("");
+    `;}).join("");
 
     $$(".showcase-card").forEach((card) => {
       card.addEventListener("click", (e) => {
@@ -888,8 +774,22 @@
       if (!tt.isDragging) return;
       const dx = e.clientX - tt.startX;
       tt.startX = e.clientX;
-      tt.angle += dx * 0.6;
-      els.turntableImg.style.transform = `rotate(${tt.angle.toFixed(1)}deg)`;
+      tt.angle += dx * 0.45;
+      // Realistic 3D turntable spin: rotateY perspective with subtle tilt & specular highlight
+      const normAngle = ((tt.angle % 360) + 360) % 360;
+      const scaleX = Math.cos(normAngle * Math.PI / 180);
+      const isBack = scaleX < 0;
+      const displayScaleX = Math.max(0.2, Math.abs(scaleX));
+      const skew = Math.sin(normAngle * Math.PI / 180) * 8;
+      const brightness = 0.88 + Math.cos(normAngle * Math.PI / 180) * 0.22;
+      
+      els.turntableImg.style.transform = `perspective(800px) rotateY(${tt.angle.toFixed(1)}deg) scale3d(${Math.abs(scaleX) * 0.15 + 0.85}, 1, 1)`;
+      els.turntableImg.style.filter = `drop-shadow(${(-skew * 2.5).toFixed(1)}px 22px 30px rgba(0,0,0,0.75)) brightness(${brightness.toFixed(2)})`;
+      
+      const pedestal = $(".turntable-pedestal", els.turntableStage);
+      if (pedestal) {
+        pedestal.style.transform = `rotateX(72deg) rotate(${tt.angle.toFixed(1)}deg)`;
+      }
     });
 
     const stopDrag = (e) => {
@@ -1102,12 +1002,7 @@
     els.gate.classList.add("hidden");
     els.loader.classList.add("show");
 
-    if (els.gateAudioCheck && els.gateAudioCheck.checked) {
-      state.audioEnabled = true;
-      AudioEngine.init();
-      AudioEngine.startAmbiance();
-      els.soundToggleBtn.classList.add("audio-on");
-    }
+    
 
     initThreeEngine();
     AudioEngine.playWhoosh();
@@ -1121,8 +1016,7 @@
     // Entrance Gate
     els.gateEnterBtn.addEventListener("click", enterShowroom);
 
-    // Audio Ambiance Toggle
-    els.soundToggleBtn.addEventListener("click", toggleAudio);
+    // Audio section removed
 
     // Showroom Mood Switcher
     els.moodToggleBtn.addEventListener("click", cycleMood);
@@ -1158,7 +1052,7 @@
     // Look-around Camera Tools
     $("#btn-reset-view").addEventListener("click", () => {
       AudioEngine.playClick();
-      tweenCameraTo(-22, 180, 74, 700);
+      tweenCameraTo(-20, 180, 74, 700);
     });
     $("#btn-zoom-in").addEventListener("click", () => {
       state.three.fov = Math.max(42, state.three.fov - 8);
@@ -1175,7 +1069,9 @@
         AudioEngine.playClick();
         const isCollapsed = railWrap.classList.toggle("collapsed");
         const icon = railToggle.querySelector(".showcase-toggle-icon");
-        if (icon) icon.textContent = isCollapsed ? "▴" : "▾";
+        if (icon) {
+          icon.style.transform = isCollapsed ? "rotate(180deg)" : "rotate(0deg)";
+        }
       });
     }
     $("#btn-fullscreen").addEventListener("click", () => {
